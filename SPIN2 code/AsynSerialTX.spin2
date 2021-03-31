@@ -1,0 +1,50 @@
+'We run in the internal RC giving us 25MHz clockspeed
+DAT
+
+Chrs         BYTE    "Const Data here:",0        'HexChrs is a byte symbol that points to "C"
+
+
+
+
+PUB main()
+
+  pinwrite(56, 1 )
+  serial_start()
+
+  repeat
+  wait(500)
+  pinwrite(56, 0 )
+  prints(@Chars);
+  wait(500)
+  pinwrite(56, 1 )
+
+
+PUB serial_start()
+  WRPIN( 57, %01_11110_0  )                             'set async tx mode for txpin
+  WXPIN( 57, ((217<<16) + (8-1 )) )                     'set baud rate to sysclock/115200 and word size to 8 bits
+  org
+   dirh    #57
+  end
+
+
+
+PUB tx(val)
+
+       WYPIN(57,val) 'load output word
+ org
+
+       WAITX   #1              'wait 2+1 clocks before polling busy
+       wait
+       RDPIN   val,#57  WC    'get busy flag into C
+       IF_C   JMP     #wait           'loop until C = 0
+
+ end
+
+
+
+
+PUB prints( s ) | c
+  c := byte[s++]
+  REPEAT WHILE (c <> 0)
+    tx(c)
+    c := byte[s++]

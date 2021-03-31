@@ -1,0 +1,3 @@
+pub main()
+    pinwrite(56, 0 )
+    repeat

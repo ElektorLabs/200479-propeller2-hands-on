@@ -1,0 +1,131 @@
+'We run in the internal RC giving us 25MHz clockspeed
+DAT
+
+Chrs         BYTE    "Const Data here:",0        'HexChrs is a byte symbol that points to "C"
+PinPressed   BYTE    "Pin pressed",0
+PinReleased  BYTE    "Pin released",0
+
+
+' For input addon attached to Pin 48 - 55
+' Input  55 54 53 52
+' Output 51 50 49 48
+VAR BYTE PinA, PinB, PinC, PinD
+
+PUB main()
+
+  LED_init()
+  Input_init()
+
+  pinwrite(56, 1 )
+  serial_start()
+
+  repeat
+    read_switch()
+
+
+PUB LED_init( )
+  'For the leds on the gpio addon we need to set the pin
+  'low to diable them
+  pinwrite(51,1)
+  pinwrite(50,1)
+  pinwrite(49,1)
+  pinwrite(48,1)
+  waitms( 1000 )
+  'We let the LEDs light up for a second
+  pinwrite(51,0)
+  pinwrite(50,0)
+  pinwrite(49,0)
+  pinwrite(48,0)
+
+
+
+PUB Input_init( )
+' A and B as input using A with 15k drive strenght for pull-up and pull-down as output no smartpin function
+  WRPIN(52, %0000_0000_000_000_010_010_00_00000)
+  WRPIN(53, %0000_0000_000_000_010_010_00_00000)
+  WRPIN(54, %0000_0000_000_000_010_010_00_00000)
+  WRPIN(55, %0000_0000_000_000_010_010_00_00000)
+
+  PINWRITE(55..52,0) 'Drive pin low with 15k resistance
+
+
+
+PUB read_switch( ) | a,b,c,d
+'We will read the pin, reflect the led state
+'We send a change in state with the UART
+
+ a := pinread(52)
+ b := pinread(53)
+ c := pinread(54)
+ d := pinread(55)
+
+  IF(PinA <> a )
+    PinA := a
+    prints(string("A:"))
+    IF( a <> 0 )
+      pinwrite(49,1)
+       prints(@PinPressed)
+    ELSE
+      pinwrite(49,0)
+      prints(@PinReleased)
+  IF(PinB <> b )
+    PinB := b
+    prints(string("B:"))
+    IF( b <> 0 )
+      pinwrite(48,1)
+      prints(@PinPressed)
+    ELSE
+      pinwrite(48,0)
+      prints(@PinReleased)
+  IF(PinC<> C )
+    PinC := c
+    prints(string("C:"))
+    IF( c <> 0 )
+      pinwrite(50,1)
+
+      prints(@PinPressed)
+    ELSE
+      pinwrite(50,0)
+      prints(@PinReleased)
+
+  IF(PinD <> d )
+    PinD := d
+   prints(string("D:"))
+    IF( d <> 0 )
+      pinwrite(51,1)
+      prints(@PinPressed)
+    ELSE
+      pinwrite(51,0)
+      prints(@PinReleased)
+
+
+
+PUB serial_start()
+  WRPIN( 57, %01_11110_0  )                             'set async tx mode for txpin
+  WXPIN( 57, ((217<<16) + (8-1 )) )                     'set baud rate to sysclock/115200 and word size to 8 bits
+  org
+   dirh    #57
+  end
+
+
+
+PUB tx(val)
+
+       WYPIN(57,val) 'load output word
+ org
+
+       WAITX   #1              'wait 2+1 clocks before polling busy
+       wait
+       RDPIN   val,#57  WC    'get busy flag into C
+       IF_C   JMP     #wait           'loop until C = 0
+
+ end
+
+
+
+
+PUB prints( s ) | c
+  c := byte[s++]
+  REPEAT WHILE (c <> 0)
+    tx(c)
+    c := byte[s++]

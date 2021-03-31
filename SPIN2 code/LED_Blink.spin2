@@ -1,0 +1,11 @@
+pub main()
+  pinwrite(56, 1 )
+  repeat
+    waitms( 500 )
+
+    pinwrite(56, 1 )
+
+    waitms( 500 )
+
+    pinwrite(56, 0 )
+
